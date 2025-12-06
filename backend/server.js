@@ -26,8 +26,8 @@ connectDB();
 //.catch(err => console.error("MongoDB 連線失敗:", err));
 
 // 載入模型
-const ChatMessage = require('./models/ChatMessage');
-const Notification = require('./models/Notification');
+const Message = require('./models/Message');
+const PublicNotice = require('./models/PublicNotice');
 
 mongoose.connection.on("connected", () => {
   console.log("🔥 已連線到資料庫：", mongoose.connection.name);
