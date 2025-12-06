@@ -2,7 +2,7 @@
 
 const mongoose = require('mongoose');
 
-const chatMessageSchema = new mongoose.Schema({
+const MessageSchema = new mongoose.Schema({
     senderId: {
         type: String,
         required: true
@@ -31,4 +31,4 @@ const chatMessageSchema = new mongoose.Schema({
     timestamps: { createdAt: 'createdAt', updatedAt: false }
 });
 
-module.exports = mongoose.model('ChatMessage', chatMessageSchema);
+module.exports = mongoose.model('Message', MessageSchema);

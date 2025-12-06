@@ -2,7 +2,7 @@
 
 const mongoose = require('mongoose');
 
-const notificationSchema = new mongoose.Schema({
+const PublicNoticeSchema = new mongoose.Schema({
     sender: {
         type: String,
         required: true,
@@ -31,4 +31,4 @@ const notificationSchema = new mongoose.Schema({
     timestamps: { createdAt: 'createdAt', updatedAt: false }
 });
 
-module.exports = mongoose.model('Notification', notificationSchema);
+module.exports = mongoose.model('PublicNotice', PublicNoticeSchema);
