@@ -1,34 +1,27 @@
-// backend/models/Notification.js
+const mongoose = require("mongoose");
 
-const mongoose = require('mongoose');
-
-const PublicNoticeSchema = new mongoose.Schema({
-    sender: {
-        type: String,
-        required: true,
-    },
-    message: {
-        type: String,
-        required: true
-    },
-    type: {
-        type: String,
-        required: true,
-        enum: ['announcement', 'system'] // 訊息類型
-    },
-    targetRole: {
-        type: String,
-        enum: ['student', 'store', 'all'], // 目標用戶群
-        required: true
-    },
-    createdAt: {
-        type: Date,
-        default: Date.now
-    }
-}, {
-    
-    // 確保只使用 createdAt 欄位
-    timestamps: { createdAt: 'createdAt', updatedAt: false }
+const publicNoticeSchema = new mongoose.Schema({
+  senderId: {
+    type: String,
+    required: true,
+  },
+  receiverId: {
+    type: String,  // null = broadcast
+    default: null,
+  },
+  senderRole: {
+    type: String,
+    enum: ["admin", "student", "vendor"],
+    required: true,
+  },
+  message: {
+    type: String,
+    required: true,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  }
 });
 
-module.exports = mongoose.model('PublicNotice', PublicNoticeSchema);
+module.exports = mongoose.model("PublicNotice", publicNoticeSchema);

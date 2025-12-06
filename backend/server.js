@@ -114,7 +114,7 @@ io.on("connection", (socket) => {
         const senderRole = socketIdToUser[socket.id]?.role;
 
         try {
-            await ChatMessage.create({
+            await Message.create({
                 senderId,
                 receiverId,
                 senderRole,
@@ -165,7 +165,7 @@ app.post("/api/broadcast", async(req, res) => {
 
     // 寫入 MongoDB (公告)
     try {
-        await Notification.create({
+        await PublicNotice.create({
             sender: `${senderRole} (${senderId})`,
             message,
             type: "announcement",
@@ -251,7 +251,7 @@ app.post("/api/order/status", async (req, res) => {
 
 // 取得公告歷史
 app.get("/api/announcements/history", async (req, res) => {
-    const history = await Notification.find().sort({ createdAt: 1 });
+    const history = await PublicNotice.find().sort({ createdAt: 1 });
     res.json(history);
 });
 
@@ -259,7 +259,7 @@ app.get("/api/announcements/history", async (req, res) => {
 app.get("/api/messages/history/:userId", async (req, res) => {
     const userId = req.params.userId;
 
-    const history = await ChatMessage.find({
+    const history = await Message.find({
         $or: [
             { senderId: userId },
             { receiverId: userId }
