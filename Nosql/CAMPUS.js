@@ -1,7 +1,7 @@
 // CAMPUS.js (位於 Nosql 資料夾內)
 
 const mongoose = require('mongoose');
-const MONGODB_URI = 'mongodb://localhost:27017/CampusFoodDB'; 
+const MONGODB_URI = 'mongodb://127.0.0.1:27017/campusfooddb'; 
 
 module.exports = function connectDB() {
     return mongoose.connect(MONGODB_URI, {

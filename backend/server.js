@@ -1,3 +1,39 @@
+// === 連線 MongoDB ===
+const mongoose = require('mongoose');
+//const connectDB = require('../Nosql/CAMPUS');
+connectDB().then(() => console.log("🚀 MongoDB 已連線"));
+
+async function connectDB() {
+    try {
+        await mongoose.connect('mongodb://localhost:27017/campusfooddb', {
+            serverSelectionTimeoutMS: 30000,
+            bufferTimeoutMS: 30000
+        });
+        console.log("🚀 MongoDB 已連線");
+    } catch (err) {
+        console.error("❌ MongoDB 連線錯誤:", err);
+        process.exit(1);
+    }
+}
+
+connectDB();
+
+//mongoose.connect("mongodb://localhost:27017/campus_chat", {
+    //useNewUrlParser: true,
+    //useUnifiedTopology: true
+//})
+//.then(() => console.log("MongoDB 已連線"))
+//.catch(err => console.error("MongoDB 連線失敗:", err));
+
+// 載入模型
+const ChatMessage = require('./models/ChatMessage');
+const Notification = require('./models/Notification');
+
+mongoose.connection.on("connected", () => {
+  console.log("🔥 已連線到資料庫：", mongoose.connection.name);
+  console.log("🔥 Mongo 連線位置：", mongoose.connection.host + ":" + mongoose.connection.port);
+});
+
 // 導入所需模組
 const express = require('express');
 const http = require('http');
@@ -71,10 +107,32 @@ io.on("connection", (socket) => {
     });
 
     // ▼ 點對點聊天
-    socket.on("send_chat_message", (data) => {
-        const { senderId, receiverId } = data;
-        io.to(receiverId).emit("receive_chat_message", data);
+    socket.on("send_chat_message", async (data) => {
+        const { senderId, receiverId, message } = data;
+
+        // 🔥 從後端自己取 senderRole，比前端傳的更準確
+        const senderRole = socketIdToUser[socket.id]?.role;
+
+        try {
+            await ChatMessage.create({
+                senderId,
+                receiverId,
+                senderRole,
+                message
+            });
+            console.log("💾 聊天訊息已寫入 MongoDB");
+        } catch (err) {
+            console.error("❌ 聊天訊息寫入失敗:", err);
+        }
+
+        io.to(receiverId).emit("receive_chat_message", {
+            ...data,
+            timestamp: Date.now()
+        });
     });
+
+
+
 
     // ▼ 斷線清除
     socket.on("disconnect", () => {
@@ -92,7 +150,7 @@ io.on("connection", (socket) => {
 // ===============================
 
 // ▼ 1. 公告廣播 API
-app.post("/api/broadcast", (req, res) => {
+app.post("/api/broadcast", async(req, res) => {
     const { senderId, senderRole, target, message } = req.body;
 
     if (senderRole !== "store" && senderRole !== "admin") {
@@ -104,6 +162,20 @@ app.post("/api/broadcast", (req, res) => {
         message,
         timestamp: Date.now()
     };
+
+    // 寫入 MongoDB (公告)
+    try {
+        await Notification.create({
+            sender: `${senderRole} (${senderId})`,
+            message,
+            type: "announcement",
+            targetRole: target
+        });
+        console.log("💾 公告已寫入 MongoDB");
+    } catch (err) {
+        console.error("❌ 公告寫入失敗:", err);
+    }
+
 
     console.log("\n=== 公告 API 呼叫成功 ===");
     console.log("來自：", senderId, "角色：", senderRole);
@@ -176,6 +248,27 @@ app.post("/api/order/status", async (req, res) => {
         if (conn) conn.release();
     }
 });
+
+// 取得公告歷史
+app.get("/api/announcements/history", async (req, res) => {
+    const history = await Notification.find().sort({ createdAt: 1 });
+    res.json(history);
+});
+
+// 取得使用者聊天歷史
+app.get("/api/messages/history/:userId", async (req, res) => {
+    const userId = req.params.userId;
+
+    const history = await ChatMessage.find({
+        $or: [
+            { senderId: userId },
+            { receiverId: userId }
+        ]
+    }).sort({ createdAt: 1 });
+
+    res.json(history);
+});
+
 
 // 啟動伺服器
 server.listen(PORT, () => {

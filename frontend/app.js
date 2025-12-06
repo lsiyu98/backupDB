@@ -1,12 +1,12 @@
-const mongoose = require("mongoose");
+//const mongoose = require("mongoose");
 
 // MongoDB 連線
-mongoose.connect("mongodb://localhost:27017/campus_chat", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-})
-.then(() => console.log("MongoDB 已連線"))
-.catch(err => console.error("MongoDB 連線失敗:", err));
+//mongoose.connect("mongodb://localhost:27017/campus_chat", {
+    //useNewUrlParser: true,
+    //useUnifiedTopology: true
+//})
+//.then(() => console.log("MongoDB 已連線"))
+//.catch(err => console.error("MongoDB 連線失敗:", err));
 
 // 載入模型
 const ChatMessage = require("./models/ChatMessage");
@@ -42,6 +42,35 @@ function connectAndRegister() {
     if (socket && isConnected) {
         socket.disconnect();
     }
+
+    // 讀取公告歷史
+    axios.get(`${API_SERVER_URL}/api/announcements/history`)
+        .then(res => {
+            res.data.forEach(a => {
+                addAnnouncement(
+                    "歷史公告",
+                    `${a.sender}: ${a.message}`,
+                    new Date(a.createdAt).getTime(),
+                    "announcement"
+                );
+            });
+        });
+
+    // 讀取聊天歷史
+    axios.get(`${API_SERVER_URL}/api/messages/history/${currentUserId}`)
+        .then(res => {
+            res.data.forEach(m => {
+                addChatMessage({
+                    senderId: m.senderId,
+                    receiverId: m.receiverId,
+                    message: m.message,
+                    timestamp: new Date(m.createdAt).getTime()
+                });
+            });
+
+            renderCurrentChat();
+        });
+
     
     // 根據角色設定 ID 並決定是否顯示公告面板
     const selectedRole = document.querySelector('input[name="role"]:checked').value;
