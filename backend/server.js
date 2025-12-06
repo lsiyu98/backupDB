@@ -108,28 +108,31 @@ io.on("connection", (socket) => {
 
     // ▼ 點對點聊天
     socket.on("send_chat_message", async (data) => {
-        const { senderId, receiverId, message } = data;
+    const { senderId, receiverId, message } = data;
 
-        // 🔥 從後端自己取 senderRole，比前端傳的更準確
-        const senderRole = socketIdToUser[socket.id]?.role;
+    // 🔥 取接收方角色 (targetRole)
+    const receiverSocketId = connectedUsers[receiverId];
+    const targetRole = socketIdToUser[receiverSocketId]?.role || "student";
 
-        try {
-            await Message.create({
-                senderId,
-                receiverId,
-                senderRole,
-                message
-            });
-            console.log("💾 聊天訊息已寫入 MongoDB");
-        } catch (err) {
-            console.error("❌ 聊天訊息寫入失敗:", err);
-        }
-
-        io.to(receiverId).emit("receive_chat_message", {
-            ...data,
-            timestamp: Date.now()
+    // 🔥 寫入 MongoDB（新 schema）
+    try {
+        await Message.create({
+            senderId,
+            type: "text",
+            targetRole,
+            message
         });
+        console.log("💾 聊天訊息已寫入 MongoDB (新 Schema)");
+    } catch (err) {
+        console.error("❌ 聊天訊息寫入失敗:", err);
+    }
+
+    // 🔥 發送訊息給接收者
+    io.to(receiverId).emit("receive_chat_message", {
+        ...data,
+        timestamp: Date.now()
     });
+});
 
 
 
@@ -166,11 +169,12 @@ app.post("/api/broadcast", async(req, res) => {
     // 寫入 MongoDB (公告)
     try {
         await PublicNotice.create({
-            sender: `${senderRole} (${senderId})`,
-            message,
-            type: "announcement",
-            targetRole: target
+            senderId,
+            receiverId: target,
+            senderRole,
+            message
         });
+
         console.log("💾 公告已寫入 MongoDB");
     } catch (err) {
         console.error("❌ 公告寫入失敗:", err);
