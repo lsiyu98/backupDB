@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const publicNoticeSchema = new mongoose.Schema({
   senderId: {
     type: String,
+    enum: ['admin', 'store'],
     required: true,
   },
   receiverId: {
